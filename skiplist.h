@@ -101,7 +101,7 @@ private:
 
     // file operator
     std::ofstream _file_writer;
-    std::iostream _file_reader;
+    std::ifstream _file_reader;
 
     // skiplist current element count
     int _element_count;
@@ -186,6 +186,89 @@ void SkipList<K,V>::display_list() {
 // 将内存中的数据转储到文件
 template<typename K,typename V>
 void SkipList<K,V>::dump_file() {
+    std::cout << "dump_file-----------------" << std::endl;
+    _file_writer.open(STORE_FILE);
+    Node<K,V> *node = this->_header->forward[0];
+
+    while(node != nullptr){
+        _file_writer << node->get_key() << ":" << node->get_value() << "\n";
+        std::cout << node->get_key() << ":" << node->get_value() << ";\n";
+        node = node->forward[0];
+    }
+    _file_writer.flush();
+    _file_writer.close();
+}
+
+// 从磁盘加载数据
+template<typename K,typename V>
+void SkipList<K,V>::load_file() {
+    _file_reader.open(STORE_FILE);
+    std::cout << "load_file-----------------" << std::endl;
+    std::string line;
+    auto *key = new std::string();
+    auto *value = new std::string();
+    while(getline(_file_reader,line)){
+        get_key_value_from_string(line,key,value);
+        if(key->empty() || value->empty()){
+            continue;
+        }
+        // 定义键为int型
+        insert_element(stoi(*key),*value);
+        std::cout << "key:" << *key << "value:" << *value << std::endl;
+    }
+    delete key;
+    delete value;
+    _file_reader.close();
+}
+
+// 获得当前的skiplist大小
+template<typename K,typename V>
+int SkipList<K,V>::get_size() {
+    return _element_count;
+}
+
+template<typename K,typename V>
+void SkipList<K,V>::get_key_value_from_string(const std::string &str, std::string *key, std::string *value) {
+    if(!is_valid_string(str)) return;
+    *key = str.substr(0,str.find(delimiter));
+    *value = str.substr(str.find(delimiter)+1,str.length());
+}
+
+template<typename K,typename V>
+bool SkipList<K,V>::is_valid_string(const std::string &str) {
+    if (str.empty()){
+        return false;
+    }
+    if (str.find(delimiter) == std::string::npos){
+        return false;
+    }
+    return true;
+}
+
+// 从跳表中删除元素
+template<typename K,typename V>
+void SkipList<K,V>::delete_element(K key) {
 
 }
 
+// 从跳表中搜索元素
+template<typename K,typename V>
+bool SkipList<K,V>::search_element(K key) {
+
+}
+
+// 构建跳表
+template<typename K,typename V>
+SkipList<K,V>::SkipList(int max_level) {
+
+}
+
+template<typename K,typename V>
+SkipList<K,V>::~SkipList(){
+
+}
+
+template<typename K,typename V>
+int SkipList<K,V>::get_random_level() {
+
+}
