@@ -124,7 +124,7 @@ int SkipList<K,V>::insert_element(const K key, const V value) {
 
     //创建并初始化update数组
     Node<K,V> *update[_max_level+1];
-    memset(update, sizeof(Node<K,V>*) * (_max_level + 1));
+    memset(update,0, sizeof(Node<K,V>*) * (_max_level + 1));
 
     //从跳表的最高层开始向下搜索
     for(int i = _skip_list_level;i >= 0;i--){
@@ -172,7 +172,7 @@ int SkipList<K,V>::insert_element(const K key, const V value) {
 template<typename K,typename V>
 void SkipList<K,V>::display_list() {
     std::cout << "\n*****Skip List*****" << "\n";
-    for(int i = 0;i < _skip_list_level;i++){
+    for(int i = 0;i <= _skip_list_level;i++){
         Node<K,V> *node = this->_header->forward[i];
         std::cout << "Level " << i <<": ";
         while(node != nullptr){
@@ -249,26 +249,89 @@ bool SkipList<K,V>::is_valid_string(const std::string &str) {
 template<typename K,typename V>
 void SkipList<K,V>::delete_element(K key) {
 
+    mtx.lock();
+    Node<K,V> *current = this->_header;
+    Node<K,V> *update[_max_level + 1];
+    memset(update,0, sizeof(Node<K,V>*) * (_max_level+1));
+
+    //从高到低开始进行搜索
+    for(int i = _skip_list_level;i >= 0;i--){
+        //下一个节点不为空且下一个节点的键小于要找的键则前进一位
+        while(current->forward[i] != nullptr && current->forward[i]->get_key() < key){
+            current = current->forward[i];
+        }
+        update[i] = current;
+    }
+
+    current = current->forward[0];
+
+    if(current != nullptr && current->get_key() == key){
+        for(int i = 0;i <= _skip_list_level;i++){
+            if(update[i]->forward[i] != current)
+                break;
+            update[i]->forward[i] = current->forward[i];
+        }
+
+        while(_skip_list_level > 0 && _header->forward[_skip_list_level] == 0){
+            _skip_list_level--;
+        }
+        std::cout << "Successfully deleted key "<< key << std::endl;
+        delete current;
+        _element_count--;
+    }
+    mtx.unlock();
 }
 
 // 从跳表中搜索元素
 template<typename K,typename V>
 bool SkipList<K,V>::search_element(K key) {
+    std::cout << "search_element-----------------" << std::endl;
+    Node<K,V> *current = _header;
 
+    for(int i =_skip_list_level;i >= 0;i--){
+        while(current->forward[i] != nullptr && current->forward[i]->get_key() < key){
+            current = current->forward[i];
+        }
+    }
+
+    current = current->forward[0];
+
+    if(current != nullptr && current->get_key() == key){
+        std::cout << "Found key: " << key << ", value: " << current->get_value() << std::endl;
+        return true;
+    }
+    std::cout << "Not Found Key:" << key << std::endl;
+    return false;
 }
 
 // 构建跳表
 template<typename K,typename V>
-SkipList<K,V>::SkipList(int max_level) {
-
+SkipList<K,V>::SkipList(int max_level):_max_level(max_level),_skip_list_level(0),_element_count(0) {
+    // create header node and initialize key and value to null
+    K k;
+    V v;
+    this->_header = new Node<K,V>(k,v,_max_level);
 }
 
 template<typename K,typename V>
 SkipList<K,V>::~SkipList(){
-
+    if(_file_writer.is_open()){
+        _file_writer.close();
+    }
+    if(_file_reader.is_open()){
+        _file_reader.close();
+    }
+    delete _header;
 }
 
 template<typename K,typename V>
 int SkipList<K,V>::get_random_level() {
 
+    //代码随想录中，将k的初值设为1，但是我觉得应该可以设为0？
+    int k = 0;
+    while(rand() % 2){
+        k++;
+    }
+    k = (k < _max_level) ? k : _max_level;
+    return k;
 }
