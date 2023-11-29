@@ -8,8 +8,3 @@ include_directories(.)
 add_executable(MySkipList
         skiplist.h
         main.cpp)
-
-add_executable(Test
-        skiplist.h
-        stress-test/stress_test.cpp
-)
